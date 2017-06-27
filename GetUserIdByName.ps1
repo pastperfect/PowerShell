@@ -4,46 +4,55 @@
     [OutputType([string])]
     Param
     (
-        # Param1 help description
+        # Last Name
         [Parameter(Mandatory=$False, Position=0)] [string] $LastName = $null,
+        # First Name
         [Parameter(Mandatory=$False, Position=1)] [string] $FirstName = $null
     )
 
     Begin
     {
-        if ([string]::IsNullOrEmpty($LastName) -and [string]::IsNullOrEmpty($FirstName))
-        {
-            throw "Either FirstName or LastName or both parameters have to be provided"
+        ## Check for valid input
+        IF ([string]::IsNullOrEmpty($LastName) -and [string]::IsNullOrEmpty($FirstName)){ THROW "You must enter either the First name, Last Name or both." }
+
+        ## Calculate what was entered
+        $Process = 0
+        IF (!([string]::IsNullOrEmpty($LastName))) { 
+            
+            # Lastname is populated, increase counter to 1
+            $Process ++
+            
+            IF (!([string]::IsNullOrEmpty($FirstName))) { 
+                
+                # Firstname is also populated increase counter to 2
+                $Process ++ 
+                }
+            
+            }
         }
-    }
     Process
     {
-   
-        $user = $null
-
-        if ([string]::IsNullOrEmpty($FirstName))
+        SWITCH ($Process)
         {
-            $user = Get-ADUser -f {Surname -eq $LastName}
-        }
-        elseif ([string]::IsNullOrEmpty($LastName))
-        {
-            $user = Get-ADUser -f {GivenName -eq $FirstName}
-        }
-        else
-        {
-            $user = Get-AdUser -f {Name -eq "$LastName, $FirstName"}
-        }
-
-        if ($user -ne $null)
-        {
-            return $user.SamAccountName
-        }
-        else
-        {
-            return "Couldn't find anything for $FirstName $LastName"
+            0 { $user = Get-ADUser -f {GivenName -eq $FirstName} }
+            1 { $user = Get-ADUser -f {Surname -eq $LastName} }
+            2 { $user = Get-AdUser -f {Name -eq "$LastName, $FirstName"} }
         }
     }
     End
     {
+
+        IF ($user -ne $null) { return $user.SamAccountName }
+        ELSE { 
+                
+                SWITCH ($Process)
+                {
+                    0 { RETURN "Couldn't find any accounts with the firstname: $FirstName" }
+                    1 { RETURN "Couldn't find any accounts with the lastname: $LastName" }
+                    2 { RETURN "Couldn't any accounts that match $FirstName $LastName" }
+                }
+                
+            }
+
     }
 }
